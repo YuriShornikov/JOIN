@@ -19,11 +19,17 @@ GROUP BY a.name
 ORDER BY avg(t.time);
 
 --3.4
-SELECT m.name FROM musicians m 
+SELECT DISTINCT m.name FROM musicians m 
 JOIN musicians_albums ma ON m.musician_id = ma.musician_id 
 JOIN albums a ON ma.album_id = a.album_id
-WHERE a.album_release != 2020
-GROUP BY m.name;
+WHERE m.name != (
+	SELECT m.name FROM MUSICIANS M 
+	join MUSICIANS_ALBUMS MA ON m.MUSICIAN_ID = ma.MUSICIAN_ID 
+	join ALBUMS A ON ma.ALBUM_ID = a.ALBUM_ID
+	WHERE a.ALBUM_RELEASE = 2020
+	)
+ORDER BY m.name;
+
 
 --3.5
 SELECT d.name FROM digests d 
@@ -32,8 +38,8 @@ JOIN tracks t ON dt.track_id = t.track_id
 JOIN albums a ON t.album_id = a.album_id 
 JOIN musicians_albums ma ON a.album_id = ma.album_id 
 JOIN musicians m ON ma.musician_id = m.musician_id 
-WHERE m.name ='Виктор Цой' AND m.name ='Михаил Горшенёв'
-GROUP BY d.name ; -- не выводит инфу
+WHERE m.name ='Виктор Цой' OR m.name ='Михаил Горшенёв'
+ORDER BY d.name ;
 
 --3.6
 SELECT a.name FROM albums a 
@@ -50,7 +56,7 @@ SELECT t.name AS track FROM tracks t
 FULL OUTER JOIN digests_tracks dt ON t.track_id = dt.track_id 
 FULL OUTER JOIN digests d ON dt.digests_id = d.digests_id 
 WHERE d.name IS NULL 
-GROUP BY t.name;
+
 
 --3.8
 SELECT m.name FROM musicians m 
@@ -58,16 +64,17 @@ JOIN musicians_albums ma ON m.musician_id = ma.musician_id
 JOIN albums a ON ma.album_id = a.album_id 
 JOIN tracks t ON a.album_id = t.album_id
 WHERE t.time = (select min(time) FROM tracks)
-GROUP BY m.name;
+
 
 --3.9 
 SELECT a.name FROM albums a
 JOIN tracks t ON a.album_id = t.album_id
 GROUP BY a.name
 HAVING count(t.name) IN (
-	SELECT min(count) FROM (
-		SELECT a.name, count(t.name) FROM albums a 
-		JOIN tracks t ON a.album_id = t.album_id
-		GROUP BY a.name
-		) AS count
+	SELECT a.name, count(t.name) FROM albums a 
+	JOIN tracks t ON a.album_id = t.album_id
+	GROUP BY a.name
+	ORDER BY count(t.name)
+	LIMIT 1
 	);
+

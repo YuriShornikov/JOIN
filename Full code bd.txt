@@ -97,93 +97,81 @@ VALUES(1, 3), (1, 4), (2, 1), (2, 2), (3, 3), (4, 1), (4, 2), (4, 3), (5, 9), (5
 SELECT * from DIGESTS_TRACKS DT ;
 
 --3.1
-select mg.name, count(m.name) from MUSICAL_GENRES MG 
-join MUSICAL_GENRES_MUSICIAS MGM on mg.MUSICAL_GENRE_ID = mgm.MUSICAL_GENRE_ID 
-JOIN MUSICIANS M on mgm.MUSICIAN_ID = m.MUSICIAN_ID 
-GROUP by mg.name 
-order by count(m.name);
+SELECT mg.name, count(m.name) FROM musical_genres mg 
+JOIN musical_genres_musicias mgm ON mg.musical_genre_id = mgm.musical_genre_id 
+JOIN musicians m ON mgm.musician_id = m.musician_id 
+GROUP BY mg.name 
+ORDER BY count(m.name);
 
 --3.2
-SELECT a.name, count(t.name) from ALBUMS A 
-join TRACKS T on a.ALBUM_ID = t.ALBUM_ID 
-where a.ALBUM_RELEASE BETWEEN 2019 and 2020
-GROUP by a.name 
-ORDER by count(t.name);
+SELECT a.name, count(t.name) FROM ALBUMS A 
+JOIN tracks t ON a.album_id = t.album_id 
+WHERE a.album_release BETWEEN 2019 AND 2020
+GROUP BY a.name 
+ORDER BY count(t.name);
 
 --3.3
-SELECT a.name, avg(t.time) from TRACKS T 
-join ALBUMS A on a.ALBUM_ID = t.ALBUM_ID 
-group by a.name 
-ORDER by avg(t.time);
+SELECT a.name, avg(t.time) FROM tracks t 
+JOIN albums a ON a.album_id = t.album_id 
+GROUP BY a.name 
+ORDER BY avg(t.time);
 
 --3.4
-SELECT m.name from MUSICIANS M 
-join MUSICIANS_ALBUMS MA on m.MUSICIAN_ID = ma.MUSICIAN_ID 
-join ALBUMS A on ma.ALBUM_ID = a.ALBUM_ID
-WHERE a.ALBUM_RELEASE  != 2020
-GROUP by m.name;
+SELECT DISTINCT m.name FROM musicians m 
+JOIN musicians_albums ma ON m.musician_id = ma.musician_id 
+JOIN albums a ON ma.album_id = a.album_id
+WHERE m.name != (
+	SELECT m.name FROM MUSICIANS M 
+	join MUSICIANS_ALBUMS MA ON m.MUSICIAN_ID = ma.MUSICIAN_ID 
+	join ALBUMS A ON ma.ALBUM_ID = a.ALBUM_ID
+	WHERE a.ALBUM_RELEASE = 2020
+	)
+ORDER BY m.name;
+
 
 --3.5
-SELECT d.name from DIGESTS D 
-join DIGESTS_TRACKS DT on d.DIGESTS_ID = dt.DIGESTS_ID 
-join TRACKS T on dt.TRACK_ID = t.TRACK_ID 
-join ALBUMS A on t.ALBUM_ID = a.ALBUM_ID 
-join MUSICIANS_ALBUMS MA on a.ALBUM_ID = ma.ALBUM_ID 
-join MUSICIANS M on ma.MUSICIAN_ID = m.MUSICIAN_ID 
-WHERE m.name ='Виктор Цой' and m.name ='Михаил Горшенёв'
-GROUP by d.name ; -- не выводит инфу
+SELECT d.name FROM digests d 
+JOIN digests_tracks dt ON d.digests_id = dt.digests_id 
+JOIN tracks t ON dt.track_id = t.track_id 
+JOIN albums a ON t.album_id = a.album_id 
+JOIN musicians_albums ma ON a.album_id = ma.album_id 
+JOIN musicians m ON ma.musician_id = m.musician_id 
+WHERE m.name ='Виктор Цой' OR m.name ='Михаил Горшенёв'
+ORDER BY d.name ;
 
 --3.6
-SELECT a.name from ALBUMS A 
-join MUSICIANS_ALBUMS MA on a.ALBUM_ID = ma.ALBUM_ID 
-join MUSICIANS M on ma.MUSICIAN_ID = m.MUSICIAN_ID 
-JOIN MUSICAL_GENRES_MUSICIAS MGM on m.MUSICIAN_ID = mgm.MUSICIAN_ID 
-JOIN MUSICAL_GENRES MG on mgm.MUSICAL_GENRE_ID = mg.MUSICAL_GENRE_ID 
-GROUP by a.name
-Having count(mgm.MUSICIAN_ID) >= 2;
+SELECT a.name FROM albums a 
+JOIN musicians_albums ma ON a.album_id = ma.album_id 
+JOIN musicians m ON ma.musician_id = m.musician_id 
+JOIN musical_genres_musicias mgm ON m.musician_id = mgm.musician_id 
+JOIN musical_genres mg ON mgm.musical_genre_id = mg.musical_genre_id 
+GROUP BY a.name
+HAVING count(mgm.musician_id) >= 2;
 
 
 --3.7
-SELECT t.name as track from TRACKS T 
-full outer join DIGESTS_TRACKS DT on t.TRACK_ID = dt.TRACK_ID 
-full outer join DIGESTS D on dt.DIGESTS_ID = d.DIGESTS_ID 
-where d.name is null 
-GROUP by t.name;
+SELECT t.name AS track FROM tracks t 
+FULL OUTER JOIN digests_tracks dt ON t.track_id = dt.track_id 
+FULL OUTER JOIN digests d ON dt.digests_id = d.digests_id 
+WHERE d.name IS NULL 
+
 
 --3.8
-SELECT m.name from MUSICIANS M 
-join MUSICIANS_ALBUMS MA on m.MUSICIAN_ID = ma.MUSICIAN_ID 
-join ALBUMS A on ma.ALBUM_ID = a.ALBUM_ID 
-join TRACKS T on a.ALBUM_ID = t.ALBUM_ID
-WHERE t.time = (select min(time) from TRACKS)
-group by m.name;
+SELECT m.name FROM musicians m 
+JOIN musicians_albums ma ON m.musician_id = ma.musician_id 
+JOIN albums a ON ma.album_id = a.album_id 
+JOIN tracks t ON a.album_id = t.album_id
+WHERE t.time = (select min(time) FROM tracks)
 
---3.9
---заполнение таблиц
-INSERT into MUSICIANS(name)
-VALUES('Бутусов');
 
-INSERT into ALBUMS(name, album_release)
-Values('не помню', 2015);
-
-SELECT * from ALBUMS A ;
-
-INSERT into MUSICIANS_ALBUMS(musician_id, album_id)
-VALUES(9, 10);
-
-insert into TRACKS(name, time, album_id)
-values('10 минут', 200, 10);
-
-SELECT * from TRACKS T 
-
---3.9 запрос
-select a.name from ALBUMS A
-join TRACKS T on a.ALBUM_ID = t.ALBUM_ID
-group by a.name
-having count(t.name) in (
-	select min(count) from (
-		select a.name, count(t.name) from ALBUMS A 
-		join TRACKS T on a.ALBUM_ID = t.ALBUM_ID
-		GROUP by a.name
-		) as count
+--3.9 
+SELECT a.name FROM albums a
+JOIN tracks t ON a.album_id = t.album_id
+GROUP BY a.name
+HAVING count(t.name) IN (
+	SELECT a.name, count(t.name) FROM albums a 
+	JOIN tracks t ON a.album_id = t.album_id
+	GROUP BY a.name
+	ORDER BY count(t.name)
+	LIMIT 1
 	);
